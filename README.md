@@ -64,9 +64,36 @@ Export from existing database table plus manual changes. `country_default_langua
 
 ### data/country_osm_grid.sql
 
-`country_grid.sql` merges territories by country. Then uses `function/utils.sql: quad_split_geometry` to split each country into multiple [Quadtree](https://en.wikipedia.org/wiki/Quadtree) polygons for faster point-in-polygon lookups.
+`country_grid.sql` creates a base table with simplified country polygons from a
+global Nominatim database. The polygons are split by rectilinear lines for
+faster point-in-polygon lookup.
 
-To visualize one country as geojson feature collection, e.g. for loading into [geojson.io](http://geojson.io/):
+The simplification of the polygons is guided by Nominatim's requirement that
+it should minimize the error that a OSM object is placed in the wrong country.
+This means simplification can be greater on water areas where there are
+fewer OSM object and needs to remain quite close to the original in
+inhabited areas. For example, the boundaries around
+[Baarle-Nassau](https://www.openstreetmap.org/#map=15/51.4414/4.9339)
+need to be kept precise, while the boundary of Northern Canada will only
+need a few vertex points.
+
+`country_fills.sql` contains manual simplifications around some areas that
+are known to cause issues with the subsequent automatic simplification and
+deduplication.
+
+Where OSM countries overlap because an area is disputed, the same strategy
+as within Nominatim itself is used and the country with the smaller area wins.
+Exceptions can be added by editing `country_fills.sql` and declaring the
+owner country for the area.
+
+The script can be run in a fully automatic fashion to create a new table
+`country_osm_grid`. However, it is advisable to carefully check the result
+because the countries in the Nominatim database are not necessarily in a
+clean state. PostGIS version 3.4 or higher is required for the
+ST_CoverageSimplify function.
+
+To visualize one country as geojson feature collection,
+e.g. for loading into [geojson.io](http://geojson.io/):
 
 ```
 -- http://www.postgresonline.com/journal/archives/267-Creating-GeoJSON-Feature-Collections-with-JSON-and-PostGIS-functions.html
@@ -87,6 +114,25 @@ FROM (
 
 ![mexico](mexico.quad.png)
 
+#### Publishing `country_osm_grid.sql`
+
+To create a new `country_grid.sql.gz`, run the following:
+
+```
+pg_dump  -Ox -t country_osm_grid <DATABASE NAME> | grep -v '^SET.*;' | grep -v '^SELECT.*;' | grep -v '^--' > country_grid.sql
+```
+
+Now add the following license header:
+
+```
+-- SPDX-License-Identifier:  ODbL-1.0
+--
+-- Copyright OpenStreetMap contributors
+--
+-- Simplified OSM country grid (data as of <DATE OF NOMINATIM DATABASE>)
+```
+
+and pack using `gzip -9`.
 
 License
 =======
