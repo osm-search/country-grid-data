@@ -58,7 +58,7 @@ Data files
 
 ### data/country_name.sql
 
-Export from existing database table plus manual changes. `country_default_language_code` most taken from [https://wiki.openstreetmap.org/wiki/Nominatim/Country_Codes](), see `utils/country_languages.php`.
+Export from existing database table plus manual changes. `country_default_language_code` most taken from [https://wiki.openstreetmap.org/wiki/Nominatim/Country_Codes](https://wiki.openstreetmap.org/wiki/Nominatim/Country_Codes), see `utils/country_languages.php`.
 
 
 
